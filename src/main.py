@@ -94,11 +94,11 @@ hill_climbing_small_sample = HC_SA(
                 "kode": "IF3130_K01",
                 "jumlah_mhs": 45,
                 "sks": 2,
-                "random_seed": 50
+                "random_seed": 20
             },
             {
                 "kode": "IF3110_K02",
-                "jumlah_mhs": 70,
+                "jumlah_mhs": 50,
                 "sks": 2,
                 "random_seed": 32
             },

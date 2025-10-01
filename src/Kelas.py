@@ -2,7 +2,7 @@ class Kelas:
     def __init__(self, mata_kuliah, ruangan):
         """
         Inisialisasi kelas dengan mata kuliah dan ruangan.
-        mata_kuliah: dict -> {"kode": str, jumlah_mhs: int, sks: int}
+        mata_kuliah: dict -> {"kode": str, jumlah_mhs: int, sks: int, random_seed: int}
         ruangan: dict -> {"kode": str, kuota: int}
         jadwal: dict -> {"jadwal_mulai": [hari: str, jam: int], "jadwal_selesai": [hari: str, jam: int]}
         """

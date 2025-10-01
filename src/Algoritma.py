@@ -6,7 +6,7 @@ class ParentAlgorithm:
         Inisialisasi kelas parent algoritma dengan state awal dan data mahasiswa dan juga inisialisasi state awal
         state: list of Kelas    
         mahasiswa: list of dict -> {"nim": str, "daftar_mk": list of str, "prioritas": list of int}
-        NOTE: prioritas posisinya respective dengan daftar_mk
+        NOTE: prioritas posisinya respective terhadap daftar_mk [1 itu prioritas tertinggi, dst]
         """
         if not input['mahasiswa']:
             raise ValueError("Input tidak valid: mahasiswa kosong")
@@ -40,7 +40,6 @@ class ParentAlgorithm:
         # Cek jadwal kelas
         for i in range (len(self.state)):
             for j in range (i+1, len(self.state)):
-                # print(max(self.state[i].jadwal['jadwal_mulai'][1], self.state[j].jadwal['jadwal_mulai'][1]), min(self.state[i].jadwal['jadwal_selesai'][1], self.state[j].jadwal['jadwal_selesai'][1]), "compare", self.state[i].mata_kuliah['kode'], self.state[j].mata_kuliah['kode'], self.state[i].ruangan['kode'], self.state[j].ruangan['kode'])
                 if self.state[i].jadwal['jadwal_mulai'][0] == self.state[j].jadwal['jadwal_mulai'][0] and max(self.state[i].jadwal['jadwal_mulai'][1], self.state[j].jadwal['jadwal_mulai'][1]) < min(self.state[i].jadwal['jadwal_selesai'][1], self.state[j].jadwal['jadwal_selesai'][1]) and self.state[i].ruangan['kode'] == self.state[j].ruangan['kode']:
                     # Mata Kuliah Saling Tabrakan Jadwal
                     print("\nTabrakan")
@@ -54,6 +53,7 @@ class ParentAlgorithm:
 
             if jumlah_mhs_daftar > kuota:
                 # Ruangan Kelebihan Kapasitas
+                print(f"\nKelebihan Kapasitas Kelas {self.state[i].mata_kuliah['kode']}: Kuota {kuota}, Jumlah Mahasiswa {jumlah_mhs_daftar}")
                 obj_kuota_kelas -= (jumlah_mhs_daftar - kuota) * 2
         
         # Cek jadwal mahasiswa
@@ -67,6 +67,7 @@ class ParentAlgorithm:
             for i in range(len(kelas)):
                 for j in range(i+1, len(kelas)):
                     if kelas[i].jadwal['jadwal_mulai'][0] == kelas[j].jadwal['jadwal_mulai'][0] and max(kelas[i].jadwal['jadwal_mulai'][1], kelas[i].jadwal['jadwal_mulai'][1]) < min(kelas[i].jadwal['jadwal_selesai'][1], kelas[i].jadwal['jadwal_selesai'][1]):
+                        # Debug purposes
                         print(f"mhs {mhs['nim']} tabrakan jadwal {kelas[i].mata_kuliah['kode']} dan {kelas[j].mata_kuliah['kode']}")
                         obj_jadwal_mahasiswa -= 2
 
@@ -96,6 +97,7 @@ class ParentAlgorithm:
         self.state: list[Kelas] = []
 
         for i in range(len(input['kelas_mata_kuliah'])):
+            # random.seed(input['kelas_mata_kuliah'][i]['random_seed'])
             if input['kelas_mata_kuliah'][i]['sks'] > 2:
                 kelas_sesi_1 = Kelas(
                     mata_kuliah={
@@ -134,10 +136,31 @@ class HC_SA(ParentAlgorithm):
     def __init__(self, input):
         super().__init__(input)
 
+    def run(self):
+        # TODO: implementasi algoritmanya di sini, bisa langsung panggil semua metode yang ada di ParentAlgorithm
+        # contoh:
+        self.tukar_jadwal()
+        self.pindah_jadwal()
+        self.hitung_fungsi_objektif()
+        self.show_state()
+        pass
+
 class SimulatedAnnealing(ParentAlgorithm):
     def __init__(self, input):
         super().__init__(input)
+    
+    def run(self):
+        # TODO: implementasi algoritmanya di sini, bisa langsung panggil semua metode yang ada di ParentAlgorithm
+        # contoh:
+        self.tukar_jadwal()
+        self.pindah_jadwal()
+        self.hitung_fungsi_objektif()
+        self.show_state()
+        pass
 
 class GeneticAlgorithm(ParentAlgorithm):
     def __init__(self, input):
         super().__init__(input)
+    
+    def run(self):
+        pass
