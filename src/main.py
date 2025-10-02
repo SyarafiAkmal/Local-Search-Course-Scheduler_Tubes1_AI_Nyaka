@@ -30,7 +30,7 @@ hill_climbing = HC_SA(
                 "random_seed": 46
             },
             {
-                "kode": "IF3110_K02",
+                "kode": "IF3110_K01",
                 "jumlah_mhs": 70,
                 "sks": 2,
                 "random_seed": 19
@@ -87,7 +87,7 @@ hill_climbing_small_sample = HC_SA(
             {
                 "kode": "IF3071_K01",
                 "jumlah_mhs": 60,
-                "sks": 4,
+                "sks": 3,
                 "random_seed": 46
             },
             {
@@ -155,5 +155,24 @@ hill_climbing_small_sample = HC_SA(
     }
 )
 
-hill_climbing_small_sample.show_state()
-hill_climbing_small_sample.hitung_fungsi_objektif()
+# hill_climbing.show_state()
+hill_climbing.fungsi_objektif()
+neighbors = hill_climbing.get_semua_neighbor()
+# hill_climbing_small_sample.show_state(neighbor[0])
+# hill_climbing.show_state(neighbors[0])
+# hill_climbing_small_sample.fungsi_objektif(state=neighbors[0])
+best_state = hill_climbing.state
+index_neighbor = 0
+
+for index, neighbor in enumerate(neighbors):
+    # hill_climbing_small_sample.show_state(neighbor)
+    print(index)
+    hill_climbing.fungsi_objektif(neighbor, verbose=True)
+    if hill_climbing.fungsi_objektif(neighbor) > hill_climbing.fungsi_objektif(best_state):
+        state = neighbor
+        index_neighbor = index
+    print("-----")
+
+hill_climbing.show_state(best_state)
+print("Objektif:", hill_climbing.fungsi_objektif(best_state, verbose=True))
+print("Index neighbor terbaik:", index_neighbor)

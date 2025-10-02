@@ -14,7 +14,7 @@ class Kelas:
         import random
         random.seed(self.mata_kuliah["random_seed"])
         hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
-        jam_mulai = random.randint(7, 15)
+        jam_mulai = random.randint(7, 16) # jam 7 - 18
         hari_random = hari[random.randint(0, 4)]
         self.jadwal = {
             "jadwal_mulai": [hari_random, jam_mulai],
