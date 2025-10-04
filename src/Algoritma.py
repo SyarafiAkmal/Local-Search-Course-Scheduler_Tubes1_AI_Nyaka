@@ -4,8 +4,12 @@ class ParentAlgorithm:
     def __init__(self, input):
         """
         Inisialisasi kelas parent algoritma dengan state awal dan data mahasiswa dan juga inisialisasi state awal
-        state: list of Kelas    
+
+        input: dict -> {"kelas_mata_kuliah": list of dict, "ruangan": list of dict, "mahasiswa": list of dict}
+        kelas_mata_kuliah: list of dict -> {"kode": str, "jumlah_mhs": int, "sks": int, "random_seed": int}
+        ruangan: list of dict -> {"kode": str, "kuota": int}   
         mahasiswa: list of dict -> {"nim": str, "daftar_mk": list of str, "prioritas": list of int}
+
         NOTE: prioritas posisinya respective terhadap daftar_mk [1 itu prioritas tertinggi, dst]
         """
 
@@ -14,7 +18,7 @@ class ParentAlgorithm:
         
         self.mahasiswa = input['mahasiswa']
         # self.dosen = input['dosen'] buat bonus
-        self.convert_input_to_state(input)
+        self.convert_input_ke_state(input)
 
 
         # debug_kls = self.get_kelas_by_kode("IF3140_K01_S2")
@@ -62,14 +66,14 @@ class ParentAlgorithm:
 
         # debug purposes
         # self.show_state(neighbor_pindah[0])
-        print(len(neighbor_tukar))
-        print(len(neighbor_pindah))
+        # print(len(neighbor_tukar))
+        # print(len(neighbor_pindah))
 
-        return neighbor_pindah
+        return neighbor_tukar + neighbor_pindah
 
     def tukar_jadwal(self, kelas1: Kelas, kelas2: Kelas):
         """
-        Fungsi untuk menukar jadwal dua kelas (menukar jadwal: dict -> {'jadwal_mulai': [hari, jam], 'jadwal_selesai': [hari, jam]})
+        Fungsi untuk menukar jadwal dua kelas (menukar jadwal: dict -> {'jadwal_mulai': [hari, jam_mulai], 'jadwal_selesai': [hari, jam_mulai + sks]})
         """
         import copy
 
@@ -120,14 +124,33 @@ class ParentAlgorithm:
                 if state[i].jadwal['jadwal_mulai'][0] == state[j].jadwal['jadwal_mulai'][0] and max(state[i].jadwal['jadwal_mulai'][1], state[j].jadwal['jadwal_mulai'][1]) < min(state[i].jadwal['jadwal_selesai'][1], state[j].jadwal['jadwal_selesai'][1]) and state[i].ruangan['kode'] == state[j].ruangan['kode']:
                     # Mata Kuliah Saling Tabrakan Jadwal
                     # debug purposes
+                    durasi_tabrakan = min(state[i].jadwal['jadwal_selesai'][1], state[j].jadwal['jadwal_selesai'][1]) - max(state[i].jadwal['jadwal_mulai'][1], state[j].jadwal['jadwal_mulai'][1])
+                    list_bobot = self.get_mahasiswa_prioritas_by_kelas(state[i].mata_kuliah['kode'])
+                    bobot = 0
+
                     if verbose:
                         print("\nTabrakan")
                         state[i].get_info()
                         print("-----")
                         state[j].get_info()
                         print("-----")
+                        print(f"Durasi Tabrakan: {durasi_tabrakan} jam")
+                        print(f"Prioritas Mahasiswa di Kelas {state[i].mata_kuliah['kode']}: {list_bobot}")
+                        print("-----\n")
 
-                    obj_jadwal_kelas -= 3
+
+                    for prioritas in list_bobot:
+                        if prioritas == 1:
+                            bobot += 1.75
+                        elif prioritas == 2:
+                            bobot += 1.5
+                        elif prioritas == 3:
+                            bobot += 1.25
+                        else:
+                            bobot += 1
+                    obj_jadwal_kelas -= durasi_tabrakan * bobot
+
+                    # obj_jadwal_kelas -= 3
 
             kuota = state[i].ruangan['kuota']
             jumlah_mhs_daftar = state[i].mata_kuliah['jumlah_mhs']
@@ -135,7 +158,8 @@ class ParentAlgorithm:
             if jumlah_mhs_daftar > kuota:
                 # Ruangan Kelebihan Kapasitas
                 # debug puporses
-                # print(f"\nKelebihan Kapasitas Kelas {state[i].mata_kuliah['kode']}: Kuota {kuota}, Jumlah Mahasiswa {jumlah_mhs_daftar}")
+                if verbose:
+                    print(f"\nKelebihan Kapasitas Kelas {state[i].mata_kuliah['kode']}: Kuota {kuota}, Jumlah Mahasiswa {jumlah_mhs_daftar}")
 
                 obj_kuota_kelas -= (jumlah_mhs_daftar - kuota) * 2
         
@@ -180,8 +204,18 @@ class ParentAlgorithm:
             return result
         
         return None
+    
+    def get_mahasiswa_prioritas_by_kelas(self, kode_kelas):
+        result = []
+        for mhs in self.mahasiswa:
+            for i, mk in enumerate(mhs['daftar_mk']):
+                if mk in kode_kelas:
+                    result.append(mhs['prioritas'][i])
+                    break
+        
+        return result
 
-    def convert_input_to_state(self, input):
+    def convert_input_ke_state(self, input):
         import random
         if not input['kelas_mata_kuliah'] or not input['ruangan']:
             raise ValueError("Input tidak valid: kelas_mata_kuliah atau ruangan kosong")
@@ -235,7 +269,7 @@ class HC_SA(ParentAlgorithm):
         # contoh:
         self.tukar_jadwal()
         self.pindah_jadwal()
-        self.hitung_fungsi_objektif()
+        self.fungsi_objektif()
         self.show_state()
         pass
 
@@ -248,7 +282,7 @@ class SimulatedAnnealing(ParentAlgorithm):
         # contoh:
         self.tukar_jadwal()
         self.pindah_jadwal()
-        self.hitung_fungsi_objektif()
+        self.fungsi_objektif()
         self.show_state()
         pass
 

@@ -164,14 +164,15 @@ neighbors = hill_climbing.get_semua_neighbor()
 best_state = hill_climbing.state
 index_neighbor = 0
 
+# ini sebenernya udah steepest ascent sih aowkowkw
 for index, neighbor in enumerate(neighbors):
     # hill_climbing_small_sample.show_state(neighbor)
-    print(index)
-    hill_climbing.fungsi_objektif(neighbor, verbose=True)
+    # print(index)
+    # hill_climbing.fungsi_objektif(neighbor, verbose=True)
     if hill_climbing.fungsi_objektif(neighbor) > hill_climbing.fungsi_objektif(best_state):
         state = neighbor
         index_neighbor = index
-    print("-----")
+    # print("-----")
 
 hill_climbing.show_state(best_state)
 print("Objektif:", hill_climbing.fungsi_objektif(best_state, verbose=True))
