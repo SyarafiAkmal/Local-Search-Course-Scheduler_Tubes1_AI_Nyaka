@@ -17,6 +17,7 @@ class ParentAlgorithm:
             raise ValueError("Input tidak valid: mahasiswa kosong")
         
         self.mahasiswa = input['mahasiswa']
+        self.ruangan = input['ruangan']
         # self.dosen = input['dosen'] buat bonus
         self.convert_input_ke_state(input)
 
@@ -40,9 +41,7 @@ class ParentAlgorithm:
         # Tukar Jadwal
         for i in range(len(self.state)):
             for j in range(i+1, len(self.state)):
-                # Buat salinan state
                 new_state = copy.deepcopy(self.state)
-                # Tukar jadwal kelas i dan j
                 self.tukar_jadwal(new_state[i], new_state[j])
                 # print("Tukar Jadwal Kelas", new_state[i].mata_kuliah['kode'], "dan", new_state[j].mata_kuliah['kode'])
                 neighbor_tukar.append(new_state)
@@ -51,17 +50,21 @@ class ParentAlgorithm:
         hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
         jam_mulai_range = list(range(7, 16)) # jam 7 - 18
         for i in range(len(self.state)):
-            # Buat salinan state
             for h in hari:
                 for j in jam_mulai_range:
-                    new_state = copy.deepcopy(self.state)
-                    jadwal_baru = {
-                        "jadwal_mulai": [h, j],
-                        "jadwal_selesai": [h, j + new_state[i].mata_kuliah['sks']]
-                    }
-                    # Pindah jadwal kelas i ke jadwal baru
-                    self.pindah_jadwal(new_state[i], jadwal_baru)
-                    neighbor_pindah.append(new_state)
+                    for r in self.ruangan:
+                        new_state = copy.deepcopy(self.state)
+                        jadwal_baru = {
+                            "jadwal_mulai": [h, j],
+                            "jadwal_selesai": [h, j + new_state[i].mata_kuliah['sks']]
+                        }
+
+                        if r['kode'] != new_state[i].ruangan['kode']:
+                            new_state[i].ruangan = r
+
+                        if not self.cek_konflik_jadwal(new_state[i], jadwal_baru):
+                            self.pindah_jadwal(new_state[i], jadwal_baru)
+                            neighbor_pindah.append(new_state)
 
 
         # debug purposes
@@ -70,6 +73,47 @@ class ParentAlgorithm:
         # print(len(neighbor_pindah))
 
         return neighbor_tukar + neighbor_pindah
+    
+    def get_random_neighbor(self):
+        """
+        Fungsi untuk mendapatkan satu neighbor secara acak dari state saat ini: List[Kelas]
+        """
+        import copy
+        import random
+
+        neighbor = copy.deepcopy(self.state)
+        metode = random.choice(['tukar', 'pindah'])
+
+        if metode == 'tukar':
+            i, j = random.sample(range(len(neighbor)), 2)
+            self.tukar_jadwal(neighbor[i], neighbor[j])
+            # print("Tukar Jadwal Kelas", neighbor[i].mata_kuliah['kode'], "dan", neighbor[j].mata_kuliah['kode'])
+
+        else: # metode == 'pindah'
+            hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
+            jam_mulai_range = list(range(7, 16)) # jam 7 - 18
+            i = random.randint(0, len(neighbor)-1)
+            h = random.choice(hari)
+            j = random.choice(jam_mulai_range)
+            jadwal_baru = {
+                "jadwal_mulai": [h, j],
+                "jadwal_selesai": [h, j + neighbor[i].mata_kuliah['sks']]
+            }
+
+            while self.cek_konflik_jadwal(neighbor[i], jadwal_baru):
+                h = random.choice(hari)
+                j = random.choice(jam_mulai_range)
+                jadwal_baru = {
+                    "jadwal_mulai": [h, j],
+                    "jadwal_selesai": [h, j + neighbor[i].mata_kuliah['sks']]
+                }
+            
+            self.pindah_jadwal(neighbor[i], jadwal_baru)
+            # print("Pindah Jadwal Kelas", neighbor[i].mata_kuliah['kode'], "ke", jadwal_baru)
+        
+        return neighbor
+
+
 
     def tukar_jadwal(self, kelas1: Kelas, kelas2: Kelas):
         """
@@ -138,7 +182,6 @@ class ParentAlgorithm:
                         print(f"Prioritas Mahasiswa di Kelas {state[i].mata_kuliah['kode']}: {list_bobot}")
                         print("-----\n")
 
-
                     for prioritas in list_bobot:
                         if prioritas == 1:
                             bobot += 1.75
@@ -148,6 +191,7 @@ class ParentAlgorithm:
                             bobot += 1.25
                         else:
                             bobot += 1
+
                     obj_jadwal_kelas -= durasi_tabrakan * bobot
 
                     # obj_jadwal_kelas -= 3
@@ -171,18 +215,16 @@ class ParentAlgorithm:
             for mk in daftar_mk:
                 kelas += self.get_kelas_by_kode(mk, state)
             
-            # print(f"\nMahasiswa {mhs['nim']} mengambil mata kuliah {[kls.mata_kuliah['kode'] for kls in kelas]}")
-            
             for i in range(len(kelas)):
                 for j in range(i+1, len(kelas)):
-                    if kelas[i].jadwal['jadwal_mulai'][0] == kelas[j].jadwal['jadwal_mulai'][0] and max(kelas[i].jadwal['jadwal_mulai'][1], kelas[i].jadwal['jadwal_mulai'][1]) < min(kelas[i].jadwal['jadwal_selesai'][1], kelas[i].jadwal['jadwal_selesai'][1]):
+                    if kelas[i].jadwal['jadwal_mulai'][0] == kelas[j].jadwal['jadwal_mulai'][0] and max(kelas[i].jadwal['jadwal_mulai'][1], kelas[j].jadwal['jadwal_mulai'][1]) < min(kelas[i].jadwal['jadwal_selesai'][1], kelas[j].jadwal['jadwal_selesai'][1]):
                         # debug purposes
                         if verbose:
                             print(f"mhs {mhs['nim']} tabrakan jadwal {kelas[i].mata_kuliah['kode']} dan {kelas[j].mata_kuliah['kode']}")
 
                         obj_jadwal_mahasiswa -= 2
 
-        # Debug purposes
+        # debug purposes
         if verbose:
             print("Objektif:", obj_jadwal_mahasiswa + obj_kuota_kelas + obj_jadwal_kelas)
             print("Objektif Jadwal Kelas:", obj_jadwal_kelas)
@@ -264,12 +306,12 @@ class HC_SA(ParentAlgorithm):
     def __init__(self, input):
         super().__init__(input)
 
-    def run(self):
+    def run(self, verbose=False):
         # TODO: implementasi algoritmanya di sini, bisa langsung panggil semua metode yang ada di ParentAlgorithm
         # contoh:
-        self.tukar_jadwal()
-        self.pindah_jadwal()
-        self.fungsi_objektif()
+        self.get_semua_neighbor() # list[list[Kelas] -> State]
+        self.get_random_neighbor() # list[Kelas] -> State (random neighbor)
+        self.fungsi_objektif() # integer, kalo gaada param state dia ngembaliin nilai objektif self.state
         self.show_state()
         pass
 
@@ -280,8 +322,7 @@ class SimulatedAnnealing(ParentAlgorithm):
     def run(self):
         # TODO: implementasi algoritmanya di sini, bisa langsung panggil semua metode yang ada di ParentAlgorithm
         # contoh:
-        self.tukar_jadwal()
-        self.pindah_jadwal()
+        self.get_random_neighbor()
         self.fungsi_objektif()
         self.show_state()
         pass
