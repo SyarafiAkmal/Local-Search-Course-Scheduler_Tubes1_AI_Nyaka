@@ -328,8 +328,131 @@ class SimulatedAnnealing(ParentAlgorithm):
         pass
 
 class GeneticAlgorithm(ParentAlgorithm):
-    def __init__(self, input):
+    def __init__(self, input, population_size=4, n_generasi=10):
         super().__init__(input)
+        self.population_size = population_size
+        self.input = input
+        self.n_generasi = n_generasi
+        self.hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
+        self.range_waktu = list(range(7, 16))
+        self.inisialisasi_populasi()
+
+    def inisialisasi_populasi(self):
+        import random
+        import copy
+        population = [self.state]
+        
+        for _ in range(self.population_size - 1):
+            new_state = copy.deepcopy(self.state)
+            for kelas in new_state:
+                kelas.randomize_jadwal(seed=random.randint(0, 10000))
+            
+            population.append(new_state)
+
+        self.population = population
     
-    def run(self):
-        pass
+    def crossover(self, parent1, parent2):
+        import copy
+        import random
+
+        child1 = copy.deepcopy(parent1)
+        child2 = copy.deepcopy(parent2)
+
+        crossover_point = random.randint(1, len(parent1) - 1)
+        for i in range(crossover_point, len(parent1)):
+            child1[i].jadwal, child2[i].jadwal = child2[i].jadwal, child1[i].jadwal
+            child1[i].ruangan, child2[i].ruangan = child2[i].ruangan, child1[i].ruangan
+        
+        return child1, child2
+
+    def mutate(self, individual, mutation_rate=0.1):
+        import random
+        hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
+        jam_mulai_range = list(range(7, 16)) # jam 7 - 18
+
+        random_index = random.randint(0, len(individual)-1)
+
+        if random.random() < mutation_rate:
+            random_index = random.randint(0, len(individual) - 1)
+
+        for h in hari:
+            for j in jam_mulai_range:
+                for r in self.ruangan:
+                    jadwal_baru = {
+                        "jadwal_mulai": [h, j],
+                        "jadwal_selesai": [h, j + individual[random_index].mata_kuliah['sks']]
+                    }
+
+                    if r['kode'] != individual[random_index].ruangan['kode']:
+                        individual[random_index].ruangan = r
+
+                    if not self.cek_konflik_jadwal(individual[random_index], jadwal_baru):
+                        self.pindah_jadwal(individual[random_index], jadwal_baru)
+                        return
+        
+
+    def select_parents(self):
+        """
+        Seleksi parent dengan metode roulette wheel selection
+        """
+        import random
+        parents = []
+        for _ in range(self.population_size // 2):
+            fitnesses = [self.fitness(ind) for ind in self.population]
+            total_fitness = sum(fitnesses)
+            probabilities = [f / total_fitness for f in fitnesses]
+            roulette_wheel = [round(sum(probabilities[:i+1]), 3) for i in range(len(probabilities))]
+            
+            random_value1 = round(random.uniform(0, 1), 3)
+            random_value2 = round(random.uniform(0, 1), 3)
+
+            parent1 = None
+            parent2 = None
+
+            for i, value in enumerate(roulette_wheel):
+                if random_value1 <= value and parent1 is None:
+                    parent1 = self.population[i]
+                if random_value2 <= value and parent2 is None:
+                    parent2 = self.population[i]
+                if parent1 is not None and parent2 is not None:
+                    break
+            parents.append((parent1, parent2))
+        
+        return parents
+        
+
+    def fitness(self, individual):
+        """
+        Fungsi fitness dengan pemanfaatan fungsi objektif (selalu bernilai negatif)
+        Semakin besar nilai fitness, semakin baik individu tersebut
+        """
+        # print(len(self.input['kelas_mata_kuliah']) + len(self.input['ruangan']) + len(self.input['mahasiswa']))
+        return 100 * (len(self.input['kelas_mata_kuliah']) + len(self.input['ruangan']) + len(self.input['mahasiswa'])) + self.fungsi_objektif(individual)
+    
+    def show_population(self):
+        for i, individual in enumerate(self.population):
+            print(f"Individu {i+1}:")
+            self.show_state(individual)
+            print("Fitness:", self.fitness(individual))
+            print("====================================\n")
+
+    def run(self, verbose=False):
+        # Inisialisasi semua parent
+        for generasi in range(self.n_generasi):
+            # Seleksi parent
+            parents = self.select_parents()
+            # Crossover dan Mutasi untuk menghasilkan anak
+            next_generation = []
+            for parent1, parent2 in parents:
+                child1, child2 = self.crossover(parent1, parent2)
+                self.mutate(child1)
+                self.mutate(child2)
+                next_generation.extend([child1, child2])
+            self.population += next_generation
+            self.population = sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)[:100]
+
+            if verbose:
+                print(f"Generasi {generasi + 1}:")
+                print("Fitness:", self.fitness(self.population[0]))
+                print(len(self.population))
+                # self.show_population()

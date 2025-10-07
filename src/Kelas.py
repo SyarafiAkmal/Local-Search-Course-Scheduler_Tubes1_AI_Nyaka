@@ -10,9 +10,13 @@ class Kelas:
         self.ruangan = ruangan
         self.randomize_jadwal()
 
-    def randomize_jadwal(self):
+    def randomize_jadwal(self, seed=None):
         import random
-        random.seed(self.mata_kuliah["random_seed"])
+        if seed is not None:
+            random.seed(seed)
+        else:
+            random.seed(self.mata_kuliah["random_seed"])
+            
         hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
         jam_mulai = random.randint(7, 16) # jam 7 - 18
         hari_random = hari[random.randint(0, 4)]
