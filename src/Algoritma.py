@@ -170,6 +170,7 @@ class ParentAlgorithm:
                     # debug purposes
                     durasi_tabrakan = min(state[i].jadwal['jadwal_selesai'][1], state[j].jadwal['jadwal_selesai'][1]) - max(state[i].jadwal['jadwal_mulai'][1], state[j].jadwal['jadwal_mulai'][1])
                     list_bobot = self.get_mahasiswa_prioritas_by_kelas(state[i].mata_kuliah['kode'])
+                    list_bobot += self.get_mahasiswa_prioritas_by_kelas(state[j].mata_kuliah['kode'])
                     bobot = 0
 
                     if verbose:
@@ -314,7 +315,7 @@ class HC_SA(ParentAlgorithm):
         self.fungsi_objektif() # integer, kalo gaada param state dia ngembaliin nilai objektif self.state
         self.show_state()
         pass
-
+        
 class SimulatedAnnealing(ParentAlgorithm):
     def __init__(self, input):
         super().__init__(input)
@@ -449,7 +450,7 @@ class GeneticAlgorithm(ParentAlgorithm):
                 self.mutate(child2)
                 next_generation.extend([child1, child2])
             self.population += next_generation
-            self.population = sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)[:100]
+            self.population = sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)[:40]
 
             if verbose:
                 print(f"Generasi {generasi + 1}:")

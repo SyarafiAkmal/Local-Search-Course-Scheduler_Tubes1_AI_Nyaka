@@ -524,7 +524,8 @@ genetic_large_sample = GeneticAlgorithm(
 )
 
 # genetic.show_population()
-genetic_large_sample.run(verbose=True)
+# genetic_large_sample.run(verbose=True)
+# genetic_large_sample.fungsi_objektif(verbose=True)
 # print(len(genetic.select_parents()))
 
 # hill_climbing.show_state()
