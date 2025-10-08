@@ -329,11 +329,10 @@ class SimulatedAnnealing(ParentAlgorithm):
         pass
 
 class GeneticAlgorithm(ParentAlgorithm):
-    def __init__(self, input, population_size=4, n_generasi=10):
+    def __init__(self, input, population_size=4):
         super().__init__(input)
         self.population_size = population_size
         self.input = input
-        self.n_generasi = n_generasi
         self.hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
         self.range_waktu = list(range(7, 16))
         self.inisialisasi_populasi()
@@ -366,15 +365,12 @@ class GeneticAlgorithm(ParentAlgorithm):
         
         return child1, child2
 
-    def mutate(self, individual, mutation_rate=0.1):
+    def mutate(self, individual):
         import random
         hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
         jam_mulai_range = list(range(7, 16)) # jam 7 - 18
 
         random_index = random.randint(0, len(individual)-1)
-
-        if random.random() < mutation_rate:
-            random_index = random.randint(0, len(individual) - 1)
 
         for h in hari:
             for j in jam_mulai_range:
@@ -437,23 +433,55 @@ class GeneticAlgorithm(ParentAlgorithm):
             print("Fitness:", self.fitness(individual))
             print("====================================\n")
 
-    def run(self, verbose=False):
+    def run(self, verbose=False, n_generasi=10):
+        import random
+        import time
+        import copy
+
+        bin_individiu = []
         # Inisialisasi semua parent
-        for generasi in range(self.n_generasi):
+        for generasi in range(n_generasi):
             # Seleksi parent
             parents = self.select_parents()
             # Crossover dan Mutasi untuk menghasilkan anak
             next_generation = []
+            print(len(parents))
             for parent1, parent2 in parents:
                 child1, child2 = self.crossover(parent1, parent2)
                 self.mutate(child1)
                 self.mutate(child2)
                 next_generation.extend([child1, child2])
-            self.population += next_generation
-            self.population = sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)[:40]
+
+            fitnesses = [self.fitness(ind) for ind in self.population]
+
+            # Deteksi stagnasi: cek apakah fitness dominan (60% sama)
+            from collections import Counter
+            counter = Counter(fitnesses)
+            most_common_count = counter.most_common(1)[0][1]
+            is_stagnant = most_common_count / len(fitnesses) > 0.4
+
+            if is_stagnant:
+                # print("Stagnasi populasi, menambah variasi populasi")
+                # time.sleep(2)
+                self.population = self.population + next_generation
+            
+                sorted_pop = sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)
+                top_10 = sorted_pop[:10]
+                random_30 = random.sample(bin_individiu, 30)
+                self.population = top_10 + random_30
+            else:
+                self.population += next_generation
+                bin_individiu += sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)[40:]
+                self.population = sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)[:40]
+                
+            # top_10 = sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)[:10]
+            # random_30 = random.sample(self.population[5:], min(30, len(self.population)-10))
+            # self.population = top_10 + random_30
+
 
             if verbose:
                 print(f"Generasi {generasi + 1}:")
-                print("Fitness:", self.fitness(self.population[0]))
-                print(len(self.population))
+                print("Best fitness:", self.fitness(self.population[0]))
+                print([self.fitness(ind) for ind in self.population])
+                print(len(bin_individiu))
                 # self.show_population()

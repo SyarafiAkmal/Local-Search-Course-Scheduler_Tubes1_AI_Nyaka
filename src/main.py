@@ -383,8 +383,7 @@ genetic = GeneticAlgorithm(
                 "prioritas": [3, 1, 2]
             }
         ]
-    },
-    n_generasi=100
+    }
 )
 
 genetic_large_sample = GeneticAlgorithm(
@@ -519,16 +518,16 @@ genetic_large_sample = GeneticAlgorithm(
             {"nim": "13520080", "daftar_mk": ["IF3110_K03", "IF3170_K02"], "prioritas": [2, 1]},
         ]
     },
-    n_generasi=1000,
     population_size=10
 )
 
 # genetic.show_population()
-# genetic_large_sample.run(verbose=True)
-# genetic_large_sample.fungsi_objektif(verbose=True)
+genetic_large_sample.run(verbose=True, n_generasi=2000)
+genetic_large_sample.fungsi_objektif(verbose=True, state=genetic_large_sample.population[0])
+print([genetic_large_sample.fitness(genetic_large_sample.population[i]) for i in range(len(genetic_large_sample.population))])
 # print(len(genetic.select_parents()))
 
 # hill_climbing.show_state()
-hill_climbing_large_sample.run(verbose=True)
-hill_climbing_large_sample.fungsi_objektif(verbose=True)
+# hill_climbing_large_sample.run(verbose=True)
+# hill_climbing_large_sample.fungsi_objektif(verbose=True)
 # hill_climbing_large_sample.show_state()
