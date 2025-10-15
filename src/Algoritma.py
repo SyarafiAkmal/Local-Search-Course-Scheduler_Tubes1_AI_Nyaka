@@ -405,17 +405,58 @@ class HC_SA(ParentAlgorithm):
         self.show_state()
         pass
         
+
+import math
+import random
+
 class SimulatedAnnealing(ParentAlgorithm):
-    def __init__(self, input):
-        super().__init__(input)
-    
-    def run(self):
-        # TODO: implementasi algoritmanya di sini, bisa langsung panggil semua metode yang ada di ParentAlgorithm
-        # contoh:
-        self.get_random_neighbor()
-        self.fungsi_objektif()
-        self.show_state()
-        pass        
+    def __init__(self, data, initial_temp=1000, cooling_rate=0.01, min_temp=1e-3):
+        super().__init__(data)
+        self.input = data
+        self.initial_temp = initial_temp
+        self.cooling_rate = cooling_rate
+        self.min_temp = min_temp
+        
+        self.current_state = self.get_random_neighbor()
+        self.best_state = self.current_state
+        self.best_score = self.fungsi_objektif(self.current_state)
+
+    def run(self, verbose=False):
+        current_state = self.current_state
+        current_score = self.best_score
+        T = self.initial_temp
+        
+        if verbose:
+            print(f"Initial score: {current_score:.4f}")
+
+        while T > self.min_temp:
+            neighbor = self.get_random_neighbor()
+            neighbor_score = self.fungsi_objektif(neighbor)
+            
+            delta = neighbor_score - current_score
+
+            if delta > 0:
+                current_state = neighbor
+                current_score = neighbor_score
+            else:
+                if random.random() < math.exp(delta / T):
+                    current_state = neighbor
+                    current_score = neighbor_score
+
+            if current_score > self.best_score:
+                self.best_state = current_state
+                self.best_score = current_score
+
+            T *= (1 - self.cooling_rate)
+            
+            if verbose:
+                print(f"T={T:.4f} | Current Score={current_score:.2f} | Best={self.best_score:.2f}")
+
+        if verbose:
+            print(f"\nFinal best score: {self.best_score:.4f}")
+
+        return self.best_state, self.best_score
+
 
 class GeneticAlgorithm(ParentAlgorithm):
     def __init__(self, input, population_size=4):
