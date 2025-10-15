@@ -1,4 +1,9 @@
 from Kelas import Kelas
+import reportlab
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 
 class ParentAlgorithm:
     def __init__(self, input):
@@ -303,6 +308,87 @@ class ParentAlgorithm:
             kelas.get_info()
             print("\n")
 
+    def visualize_state(self):
+        # Sample array (list of lists)
+        data = [
+            ["Waktu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat"],
+            ["07:00-08:00", "", "", "", "", ""],
+            ["08:00-09:00", "", "", "", "", ""],
+            ["09:00-10:00", "", "", "", "", ""],
+            ["10:00-11:00", "", "", "", "", ""],
+            ["11:00-12:00", "", "", "", "", ""],
+            ["12:00-13:00", "", "", "", "", ""],
+            ["13:00-14:00", "", "", "", "", ""],
+            ["14:00-15:00", "", "", "", "", ""],
+            ["15:00-16:00", "", "", "", "", ""],
+            ["16:00-17:00", "", "", "", "", ""],
+            ["17:00-18:00", "", "", "", "", ""],
+        ]
+
+        jam_mulai_mapping = {
+            7: 1,
+            8: 2,
+            9: 3,
+            10: 4,
+            11: 5,
+            12: 6,
+            13: 7,
+            14: 8,
+            15: 9,
+            16: 10,
+            17: 11,
+        }
+
+        hari_mapping = {
+            "Senin": 1,
+            "Selasa": 2,
+            "Rabu": 3,
+            "Kamis": 4,
+            "Jumat": 5,
+        }    
+
+        for kelas in self.state:
+            print(kelas.mata_kuliah['kode'], kelas.jadwal, kelas.ruangan)
+            hari, jam_mulai = kelas.jadwal['jadwal_mulai'][0], kelas.jadwal['jadwal_mulai'][1]
+            sks = kelas.mata_kuliah['sks']
+            value = kelas.mata_kuliah['kode'] + " (" + kelas.ruangan['kode'] + ")"
+            idx_jam, idx_hari = jam_mulai_mapping[jam_mulai], hari_mapping[hari]
+
+            for j in range(sks):
+                if idx_jam + j < len(data):
+                    if data[idx_jam + j][idx_hari] == "":
+                        data[idx_jam + j][idx_hari] = value
+                    else:
+                        data[idx_jam + j][idx_hari] += f"\n{value}"
+
+
+
+        # Create a PDF document
+        pdf_path = f"output/table_schedule.pdf"
+        pdf = SimpleDocTemplate(pdf_path, pagesize=A4)
+
+        # Create table from data
+        col_widths = [70, 85, 85, 85, 85, 85]  # adjust as needed
+
+        table = Table(data, colWidths=col_widths)
+
+        style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 6),  # smaller text helps fit
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ])
+        table.setStyle(style)
+
+        # Add the table to the PDF and build it
+        elements = [table]
+        pdf.build(elements)
+
 class HC_SA(ParentAlgorithm):
     def __init__(self, input):
         super().__init__(input)
@@ -349,14 +435,14 @@ class GeneticAlgorithm(ParentAlgorithm):
             
             population.append(new_state)
 
-        self.population = population
+        self.population = sorted(population, key=lambda ind: self.fitness(ind), reverse=True)
     
     def crossover(self, parent1, parent2):
         import copy
         import random
 
-        child1 = copy.deepcopy(parent1)
-        child2 = copy.deepcopy(parent2)
+        child1: list[Kelas] = copy.deepcopy(parent1)
+        child2: list[Kelas] = copy.deepcopy(parent2)
 
         crossover_point = random.randint(1, len(parent1) - 1)
         for i in range(crossover_point, len(parent1)):
@@ -458,7 +544,7 @@ class GeneticAlgorithm(ParentAlgorithm):
             from collections import Counter
             counter = Counter(fitnesses)
             most_common_count = counter.most_common(1)[0][1]
-            is_stagnant = most_common_count / len(fitnesses) > 0.4
+            is_stagnant = most_common_count / len(fitnesses) > 0.3
 
             if is_stagnant:
                 # print("Stagnasi populasi, menambah variasi populasi")
@@ -466,22 +552,16 @@ class GeneticAlgorithm(ParentAlgorithm):
                 self.population = self.population + next_generation
             
                 sorted_pop = sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)
-                top_10 = sorted_pop[:10]
-                random_30 = random.sample(bin_individiu, 30)
+                top_10 = sorted_pop[:15]
+                random_30 = random.sample(bin_individiu, min(25, len(bin_individiu)))
                 self.population = top_10 + random_30
             else:
                 self.population += next_generation
                 bin_individiu += sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)[40:]
                 self.population = sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)[:40]
-                
-            # top_10 = sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)[:10]
-            # random_30 = random.sample(self.population[5:], min(30, len(self.population)-10))
-            # self.population = top_10 + random_30
-
 
             if verbose:
                 print(f"Generasi {generasi + 1}:")
                 print("Best fitness:", self.fitness(self.population[0]))
                 print([self.fitness(ind) for ind in self.population])
                 print(len(bin_individiu))
-                # self.show_population()

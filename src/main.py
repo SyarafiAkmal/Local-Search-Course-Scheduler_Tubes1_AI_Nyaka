@@ -521,10 +521,13 @@ genetic_large_sample = GeneticAlgorithm(
     population_size=10
 )
 
-# genetic.show_population()
-genetic_large_sample.run(verbose=True, n_generasi=2000)
-genetic_large_sample.fungsi_objektif(verbose=True, state=genetic_large_sample.population[0])
-print([genetic_large_sample.fitness(genetic_large_sample.population[i]) for i in range(len(genetic_large_sample.population))])
+genetic.visualize_state()
+# import time
+# genetic_large_sample.fungsi_objektif(verbose=True, state=genetic_large_sample.population[0])
+# time.sleep(2)
+# genetic_large_sample.run(verbose=True, n_generasi=2000)
+# genetic_large_sample.fungsi_objektif(verbose=True, state=genetic_large_sample.population[0])
+# print([genetic_large_sample.fitness(genetic_large_sample.population[i]) for i in range(len(genetic_large_sample.population))])
 # print(len(genetic.select_parents()))
 
 # hill_climbing.show_state()
