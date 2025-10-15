@@ -1,9 +1,9 @@
 from Kelas import Kelas
-import reportlab
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
+
 
 class ParentAlgorithm:
     def __init__(self, input):
@@ -25,6 +25,7 @@ class ParentAlgorithm:
         self.ruangan = input['ruangan']
         # self.dosen = input['dosen'] buat bonus
         self.convert_input_ke_state(input)
+        # self.show_state()
 
 
         # debug_kls = self.get_kelas_by_kode("IF3140_K01_S2")
@@ -86,37 +87,36 @@ class ParentAlgorithm:
         import copy
         import random
 
-        neighbor = copy.deepcopy(self.state)
-        metode = random.choice(['tukar', 'pindah'])
+        neighbor_tukar = copy.deepcopy(self.state)
+        neighbor_pindah = copy.deepcopy(self.state)
+        # print(len(neighbor_tukar), "length neighbor")
 
-        if metode == 'tukar':
-            i, j = random.sample(range(len(neighbor)), 2)
-            self.tukar_jadwal(neighbor[i], neighbor[j])
-            # print("Tukar Jadwal Kelas", neighbor[i].mata_kuliah['kode'], "dan", neighbor[j].mata_kuliah['kode'])
+        i, j = random.sample(range(len(neighbor_tukar)), 2)
+        # print(i, j, "tukar")
+        self.tukar_jadwal(neighbor_tukar[i], neighbor_tukar[j])
 
-        else: # metode == 'pindah'
-            hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
-            jam_mulai_range = list(range(7, 16)) # jam 7 - 18
-            i = random.randint(0, len(neighbor)-1)
+        hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
+        jam_mulai_range = list(range(7, 16)) # jam 7 - 18
+        i = random.randint(0, len(neighbor_pindah)-1)
+        h = random.choice(hari)
+        j = random.choice(jam_mulai_range)
+        # print(i, j, "pindah")
+        jadwal_baru = {
+            "jadwal_mulai": [h, j],
+            "jadwal_selesai": [h, j + neighbor_pindah[i].mata_kuliah['sks']]
+        }
+
+        while self.cek_konflik_jadwal(neighbor_pindah[i], jadwal_baru):
             h = random.choice(hari)
             j = random.choice(jam_mulai_range)
             jadwal_baru = {
                 "jadwal_mulai": [h, j],
-                "jadwal_selesai": [h, j + neighbor[i].mata_kuliah['sks']]
+                "jadwal_selesai": [h, j + neighbor_pindah[i].mata_kuliah['sks']]
             }
-
-            while self.cek_konflik_jadwal(neighbor[i], jadwal_baru):
-                h = random.choice(hari)
-                j = random.choice(jam_mulai_range)
-                jadwal_baru = {
-                    "jadwal_mulai": [h, j],
-                    "jadwal_selesai": [h, j + neighbor[i].mata_kuliah['sks']]
-                }
-            
-            self.pindah_jadwal(neighbor[i], jadwal_baru)
-            # print("Pindah Jadwal Kelas", neighbor[i].mata_kuliah['kode'], "ke", jadwal_baru)
         
-        return neighbor
+        self.pindah_jadwal(neighbor_pindah[i], jadwal_baru)
+
+        return max([neighbor_pindah, neighbor_tukar], key=lambda s: self.fungsi_objektif(s))
 
 
 
@@ -308,8 +308,11 @@ class ParentAlgorithm:
             kelas.get_info()
             print("\n")
 
-    def visualize_state(self):
+    def visualize_state(self, name="Jadwal_Kuliah_", state=None):
         # Sample array (list of lists)
+        if state is None:
+            state = self.state
+
         data = [
             ["Waktu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat"],
             ["07:00-08:00", "", "", "", "", ""],
@@ -347,8 +350,8 @@ class ParentAlgorithm:
             "Jumat": 5,
         }    
 
-        for kelas in self.state:
-            print(kelas.mata_kuliah['kode'], kelas.jadwal, kelas.ruangan)
+        for kelas in state:
+            # print(kelas.mata_kuliah['kode'], kelas.jadwal, kelas.ruangan)
             hari, jam_mulai = kelas.jadwal['jadwal_mulai'][0], kelas.jadwal['jadwal_mulai'][1]
             sks = kelas.mata_kuliah['sks']
             value = kelas.mata_kuliah['kode'] + " (" + kelas.ruangan['kode'] + ")"
@@ -364,7 +367,7 @@ class ParentAlgorithm:
 
 
         # Create a PDF document
-        pdf_path = f"output/table_schedule.pdf"
+        pdf_path = f"output/{name}.pdf"
         pdf = SimpleDocTemplate(pdf_path, pagesize=A4)
 
         # Create table from data
@@ -374,7 +377,7 @@ class ParentAlgorithm:
 
         style = TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
@@ -412,7 +415,7 @@ class SimulatedAnnealing(ParentAlgorithm):
         self.get_random_neighbor()
         self.fungsi_objektif()
         self.show_state()
-        pass
+        pass        
 
 class GeneticAlgorithm(ParentAlgorithm):
     def __init__(self, input, population_size=4):
@@ -521,8 +524,8 @@ class GeneticAlgorithm(ParentAlgorithm):
 
     def run(self, verbose=False, n_generasi=10):
         import random
-        import time
-        import copy
+
+        self.visualize_state("GA_Awal_")
 
         bin_individiu = []
         # Inisialisasi semua parent
@@ -565,3 +568,5 @@ class GeneticAlgorithm(ParentAlgorithm):
                 print("Best fitness:", self.fitness(self.population[0]))
                 print([self.fitness(ind) for ind in self.population])
                 print(len(bin_individiu))
+        
+        self.visualize_state("GA_Akhir_", state=self.population[0])
