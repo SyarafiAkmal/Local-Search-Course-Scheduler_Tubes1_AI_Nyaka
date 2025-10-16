@@ -1,12 +1,17 @@
 from Kelas import Kelas
+import math
+import random
+import copy
+import time
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
+import matplotlib.pyplot as plt
 
 
 class ParentAlgorithm:
-    def __init__(self, input):
+    def __init__(self, input, seed=0):
         """
         Inisialisasi kelas parent algoritma dengan state awal dan data mahasiswa dan juga inisialisasi state awal
 
@@ -18,20 +23,20 @@ class ParentAlgorithm:
         NOTE: prioritas posisinya respective terhadap daftar_mk [1 itu prioritas tertinggi, dst]
         """
 
-        if not input['mahasiswa']:
-            raise ValueError("Input tidak valid: mahasiswa kosong")
         
         self.mahasiswa = input['mahasiswa']
         self.ruangan = input['ruangan']
+
+        random.seed(seed)
+        seed_start = random.randint(0, 100)
+        for mata_kuliah in input['kelas_mata_kuliah']:
+            mata_kuliah['random_seed'] = seed_start
+            seed_start += 1
+
         # self.dosen = input['dosen'] buat bonus
         self.convert_input_ke_state(input)
-        # self.show_state()
-
-
-        # debug_kls = self.get_kelas_by_kode("IF3140_K01_S2")
-        # debug_kls[0].jadwal = {"jadwal_mulai": ['Selasa', 9], "jadwal_selesai": ['Selasa', 11]}
-        # debug_kls[0].ruangan = {"kode": "7606", "kuota": 60}
-        # debug_kls[0].get_info()
+        self.obj_history = []
+        self.iteration = 0
 
     def get_semua_neighbor(self):
         """
@@ -179,15 +184,15 @@ class ParentAlgorithm:
                     list_bobot += self.get_mahasiswa_prioritas_by_kelas(state[j].mata_kuliah['kode'])
                     bobot = 0
 
-                    if verbose:
-                        print("\nTabrakan")
-                        state[i].get_info()
-                        print("-----")
-                        state[j].get_info()
-                        print("-----")
-                        print(f"Durasi Tabrakan: {durasi_tabrakan} jam")
-                        print(f"Prioritas Mahasiswa di Kelas {state[i].mata_kuliah['kode']}: {list_bobot}")
-                        print("-----\n")
+                    # if verbose:
+                    #     print("\nTabrakan")
+                    #     state[i].get_info()
+                    #     print("-----")
+                    #     state[j].get_info()
+                    #     print("-----")
+                    #     print(f"Durasi Tabrakan: {durasi_tabrakan} jam")
+                    #     print(f"Prioritas Mahasiswa di Kelas {state[i].mata_kuliah['kode']}: {list_bobot}")
+                    #     print("-----\n")
 
                     for prioritas in list_bobot:
                         if prioritas == 1:
@@ -209,8 +214,8 @@ class ParentAlgorithm:
             if jumlah_mhs_daftar > kuota:
                 # Ruangan Kelebihan Kapasitas
                 # debug puporses
-                if verbose:
-                    print(f"\nKelebihan Kapasitas Kelas {state[i].mata_kuliah['kode']}: Kuota {kuota}, Jumlah Mahasiswa {jumlah_mhs_daftar}")
+                # if verbose:
+                #     print(f"\nKelebihan Kapasitas Kelas {state[i].mata_kuliah['kode']}: Kuota {kuota}, Jumlah Mahasiswa {jumlah_mhs_daftar}")
 
                 obj_kuota_kelas -= (jumlah_mhs_daftar - kuota) * 2
         
@@ -226,8 +231,8 @@ class ParentAlgorithm:
                 for j in range(i+1, len(kelas)):
                     if kelas[i].jadwal['jadwal_mulai'][0] == kelas[j].jadwal['jadwal_mulai'][0] and max(kelas[i].jadwal['jadwal_mulai'][1], kelas[j].jadwal['jadwal_mulai'][1]) < min(kelas[i].jadwal['jadwal_selesai'][1], kelas[j].jadwal['jadwal_selesai'][1]):
                         # debug purposes
-                        if verbose:
-                            print(f"mhs {mhs['nim']} tabrakan jadwal {kelas[i].mata_kuliah['kode']} dan {kelas[j].mata_kuliah['kode']}")
+                        # if verbose:
+                        #     print(f"mhs {mhs['nim']} tabrakan jadwal {kelas[i].mata_kuliah['kode']} dan {kelas[j].mata_kuliah['kode']}")
 
                         obj_jadwal_mahasiswa -= 2
 
@@ -393,24 +398,21 @@ class ParentAlgorithm:
         elements = [table]
         pdf.build(elements)
 
-import time
 class HC_SA(ParentAlgorithm):
-    def __init__(self, input):
-        super().__init__(input)
+    def __init__(self, input, seed):
+        super().__init__(input, seed)
 
-    def run(self, verbose=False):
-        start_time = time.time()
+
+    def run(self, name, verbose=False):
         current_score = self.fungsi_objektif()
 
-        self.visualize_state("HC_Awal_")
+        self.visualize_state(f"{name}_awal_")
         if verbose:
             print(f"Initial score: {current_score:.4f}")
-        iteration = 0
-        history = [current_score]
         while True:
-            iteration += 1
+            self.iteration += 1
             if verbose:
-                print(f"Iterasi ke-{iteration}")
+                print(f"Iterasi ke-{self.iteration}")
             neighbors = self.get_semua_neighbor()
             if not neighbors:
                 if verbose:
@@ -419,29 +421,48 @@ class HC_SA(ParentAlgorithm):
 
             best_neighbor = max(neighbors, key=lambda s: self.fungsi_objektif(s))
             best_neighbor_score = self.fungsi_objektif(best_neighbor)
+
             if verbose:
                 print(f"Skor saat ini : {current_score:.4f}, Skor neighbor terbaik: {best_neighbor_score:.4f}")
             if best_neighbor_score > current_score:
                 self.state = best_neighbor
                 current_score = best_neighbor_score
-                history.append(current_score)
+                self.obj_history.append(current_score)
                 if verbose:
                     print(f"Ditemukan state yang lebih baik dengan skor baru: {current_score:.4f}")
             else:
                 if verbose:
-                    print("Tidak ada perbaikan, telah mencapai" + "global optimum" if self.fungsi_objektif() == 0 else "lokal optimum")
+                    print("Tidak ada perbaikan, telah mencapai" + " global optimum" if self.fungsi_objektif() == 0 else " lokal optimum")
                 break
-        end_time = time.time()
-        duration = end_time - start_time
-        self.visualize_state("HC_Akhir_")
+        self.visualize_state(f"{name}_akhir_")
         return self.state, current_score
+    
+    def plot(self, name):
+        x = [i for i in range(1, self.iteration)]
+        y = self.obj_history
 
-import math
-import random
+        # Create figure with specific size
+        plt.figure(figsize=(10, 6))
+
+        # Plot with styling
+        plt.plot(x, y, marker='o', linestyle='-', color='blue', linewidth=2, markersize=8)
+
+        # Add grid
+        plt.grid(True, alpha=0.3)
+
+        # Labels and title
+        plt.xlabel('Iteration', fontsize=12)
+        plt.ylabel('Objective Function', fontsize=12)
+
+        # Save with high DPI (quality)
+        plt.savefig(f'output/{name}.png', dpi=300, bbox_inches='tight')
+
+        # Close to free memory
+        plt.close()
 
 class SimulatedAnnealing(ParentAlgorithm):
-    def __init__(self, input, initial_temp=1000, cooling_rate=0.01, min_temp=1e-3):
-        super().__init__(input)
+    def __init__(self, input, seed, initial_temp=1000, cooling_rate=0.01, min_temp=1e-3):
+        super().__init__(input, seed)
         self.input = input
         self.initial_temp = initial_temp
         self.cooling_rate = cooling_rate
@@ -451,60 +472,115 @@ class SimulatedAnnealing(ParentAlgorithm):
         self.best_state = self.current_state
         self.best_score = self.fungsi_objektif(self.current_state)
 
-    def run(self, verbose=False):
+        self.stuck_count = 0
+        self.p_history = []
+
+    def run(self, name, verbose=False):
         current_state = self.current_state
         current_score = self.best_score
         T = self.initial_temp
+        iteration = 0
+        
+        # Variabel untuk deteksi stuck
+        iterations_without_improvement = 0
+        stuck_count = 0
+        stuck_threshold = 100  # Dianggap stuck jika 100 iterasi tidak ada improvement
 
-        self.visualize_state("SA_Awal_")
+        self.visualize_state(f"{name}_awal_")
         
         if verbose:
             print(f"Initial score: {current_score:.4f}")
 
         while T > self.min_temp:
+            self.iteration += 1
             neighbor = self.get_random_neighbor()
             neighbor_score = self.fungsi_objektif(neighbor)
             
             delta = neighbor_score - current_score
 
+            self.obj_history.append(current_score)
+            # Track if accepted
+            accepted = False
             if delta > 0:
                 current_state = neighbor
                 current_score = neighbor_score
+                accepted = True
+                iterations_without_improvement = 0
+                self.p_history.append(1)
             else:
-                if random.random() < math.exp(delta / T):
+                p = math.exp(delta / T)
+                self.p_history.append(p)
+                if random.random() < p:
                     current_state = neighbor
                     current_score = neighbor_score
+                    accepted = True
+                    iterations_without_improvement = 0
+                else:
+                    iterations_without_improvement += 1
 
             if current_score > self.best_score:
                 self.best_state = current_state
                 self.best_score = current_score
+            
+            # Deteksi stuck
+            if iterations_without_improvement >= stuck_threshold:
+                self.stuck_count += 1
+                iterations_without_improvement = 0
+                if verbose:
+                    print(f"  [STUCK #{stuck_count}] at iteration {iteration}, T={T:.4f}, Score={current_score:.2f}")
 
             T *= (1 - self.cooling_rate)
             
             if verbose:
-                print(f"T={T:.4f} | Current Score={current_score:.2f} | Best={self.best_score:.2f}")
+                print(f"T={T:.4f} | Current Score={current_score:.2f} | Best={self.best_score:.2f} | Stuck={stuck_count}")
 
         if verbose:
             print(f"\nFinal best score: {self.best_score:.4f}")
+            print(f"Total stuck events: {stuck_count}")
+            print(f"Optimum type: {'global optimum' if self.best_score == 0 else 'lokal optimum'}")
         
-        self.visualize_state("SA_Akhir_", state=self.best_state)
+        self.visualize_state(f"{name}_akhir_", state=self.best_state)
         # self.fungsi_objektif(state=self.best_state, verbose=True)
 
         return self.best_state, self.best_score
+    
+    def plot(self, name):
+        x = [i for i in range(1, self.iteration+1)]
+        y = self.obj_history
+        p = self.p_history
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+        # First plot
+        ax1.plot(x, y)
+        ax1.set_xlabel('Iterations')
+        ax1.set_ylabel('Objective Value')
+        ax1.set_title('Objective Value')
+
+        # Second plot
+        ax2.plot(x, p, color='red')
+        ax2.set_xlabel('Iterations')
+        ax2.set_ylabel('e^delta_E/T')
+        ax2.set_title('e^delta_E/T')
+
+        plt.tight_layout()
+        plt.savefig(f'output/{name}_obj_p_plots.png')
+        plt.close()
 
 
 class GeneticAlgorithm(ParentAlgorithm):
-    def __init__(self, input, population_size=100):
+    def __init__(self, input, population_size=100, n_generasi=10):
         super().__init__(input)
         self.population_size = population_size
+        self.n_generasi = n_generasi
         self.input = input
         self.hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
         self.range_waktu = list(range(7, 16))
         self.inisialisasi_populasi()
+        self.avg_obj_history = []
 
     def inisialisasi_populasi(self):
-        import random
-        import copy
+
         population = [self.state]
         
         for _ in range(self.population_size - 1):
@@ -517,8 +593,6 @@ class GeneticAlgorithm(ParentAlgorithm):
         self.population = sorted(population, key=lambda ind: self.fitness(ind), reverse=True)
 
     def crossover(self, parent1, parent2):
-        import copy
-        import random
         
         child1 = copy.deepcopy(parent1)
         child2 = copy.deepcopy(parent2)
@@ -543,8 +617,6 @@ class GeneticAlgorithm(ParentAlgorithm):
     
         
     def mutate(self, individual, mutation_rate=0.3):
-        import random
-        import copy
         
         for i in range(len(individual)):
             if random.random() < mutation_rate:
@@ -566,7 +638,7 @@ class GeneticAlgorithm(ParentAlgorithm):
                     individual[i].ruangan = r
                     
                     if not self.cek_konflik_jadwal(individual[i], jadwal_baru):
-                        break
+                        break 
                     else:
                         individual[i].jadwal = old_jadwal
                         individual[i].ruangan = old_ruangan
@@ -607,16 +679,16 @@ class GeneticAlgorithm(ParentAlgorithm):
             print("Fitness:", self.fitness(individual))
             print("====================================\n")
 
-    def run(self, verbose=False, n_generasi=10):
+    def run(self, name, verbose=False):
         import random
 
-        self.visualize_state("GA_Awal_")
+        self.visualize_state(f"{name}_awal")
 
         bin_individiu = []
-        for generasi in range(n_generasi):
+        for generasi in range(self.n_generasi):
             parents = self.select_parents()
             next_generation = []
-            print(len(parents))
+            # print(len(parents))
             for parent1, parent2 in parents:
                 child1, child2 = self.crossover(parent1, parent2)
                 self.mutate(child1)
@@ -624,6 +696,9 @@ class GeneticAlgorithm(ParentAlgorithm):
                 next_generation.extend([child1, child2])
 
             fitnesses = [self.fitness(ind) for ind in self.population]
+
+            self.obj_history.append(fitnesses[0])
+            self.avg_obj_history.append(sum(fitnesses) / len(fitnesses))
 
             from collections import Counter
             counter = Counter(fitnesses)
@@ -650,5 +725,29 @@ class GeneticAlgorithm(ParentAlgorithm):
                 print([self.fitness(ind) for ind in self.population])
                 print(len(bin_individiu))
         
-        print(self.fungsi_objektif(self.population[0], verbose=True))
-        self.visualize_state("GA_Akhir_MutationLama", state=self.population[0])
+        self.fungsi_objektif(self.population[0], verbose=True)
+        self.visualize_state(f"{name}_akhir", state=self.population[0])
+
+    def plot(self, name):
+        x = [i for i in range(1, self.n_generasi+1)]
+        y1 = self.obj_history
+        y2 = self.avg_obj_history
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+        # First plot
+        total = 100 * (len(self.input['kelas_mata_kuliah']) + len(self.input['ruangan']) + len(self.input['mahasiswa']))
+        ax1.plot(x, y1)
+        ax1.set_xlabel('Iterations')
+        ax1.set_ylabel('Y')
+        ax1.set_title(f'Best Ind Fitness/{total}')
+
+        # Second plot
+        ax2.plot(x, y2, color='red')
+        ax2.set_xlabel('X')
+        ax2.set_ylabel('Y')
+        ax2.set_title(f'Avg Population Fitness/{total}')
+
+        plt.tight_layout()
+        plt.savefig(f'output/{name}_obj_avg_plots.png')
+        plt.close()
