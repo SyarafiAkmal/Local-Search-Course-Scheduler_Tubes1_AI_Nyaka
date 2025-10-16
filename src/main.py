@@ -20,7 +20,7 @@ if __name__ == "__main__":
     match algorithm:
         case "hc":
             hill_climbing = HC_SA(input=input_file)
-            hill_climbing.run()
+            hill_climbing.run(verbose=True)
         case "sa":
             simulated_annealing = SimulatedAnnealing(input=input_file)
             simulated_annealing.run(verbose=True)

@@ -393,19 +393,50 @@ class ParentAlgorithm:
         elements = [table]
         pdf.build(elements)
 
+import time
 class HC_SA(ParentAlgorithm):
     def __init__(self, input):
         super().__init__(input)
 
     def run(self, verbose=False):
-        # TODO: implementasi algoritmanya di sini, bisa langsung panggil semua metode yang ada di ParentAlgorithm
-        # contoh:
-        self.get_semua_neighbor() # list[list[Kelas] -> State]
-        self.get_random_neighbor() # list[Kelas] -> State (random neighbor)
-        self.fungsi_objektif() # integer, kalo gaada param state dia ngembaliin nilai objektif self.state
-        self.show_state()
-        pass
-        
+        start_time = time.time()
+        current_state = self.state
+        current_score = self.fungsi_objektif(current_state)
+
+        self.visualize_state("HC_Awal_")
+        if verbose:
+            print(f"Initial score: {current_score:.4f}")
+        iteration = 0
+        history = [current_score]
+        while True:
+            iteration += 1
+            if verbose:
+                print(f"Iterasi ke-{iteration}")
+            neighbors = self.get_semua_neighbor()
+            if not neighbors:
+                if verbose:
+                    print("Tidak ada neighbor yang tersedia.")
+                break
+
+            best_neighbor = max(neighbors, key=lambda s: self.fungsi_objektif(s))
+            best_neighbor_score = self.fungsi_objektif(best_neighbor)
+            if verbose:
+                print(f"Skor saat ini : {current_score:.4f}, Skor neighbor terbaik: {best_neighbor_score:.4f}")
+            if best_neighbor_score > current_score:
+                current_state = best_neighbor
+                current_score = best_neighbor_score
+                history.append(current_score)
+                if verbose:
+                    print(f"Ditemukan state yang lebih baik dengan skor baru: {current_score:.4f}")
+            else:
+                if verbose:
+                    print("Tidak ada perbaikan, telah mencapai lokal optimum.")
+                break
+        end_time = time.time()
+        duration = end_time - start_time
+        self.state = current_state
+        self.visualize_state("HC_Akhir_")
+        return self.state, current_score
 
 import math
 import random
