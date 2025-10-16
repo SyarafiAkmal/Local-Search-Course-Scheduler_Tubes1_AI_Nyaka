@@ -80,6 +80,7 @@ class ParentAlgorithm:
 
         return neighbor_tukar + neighbor_pindah
     
+    
     def get_random_neighbor(self):
         """
         Fungsi untuk mendapatkan satu neighbor secara acak dari state saat ini: List[Kelas]
@@ -410,9 +411,9 @@ import math
 import random
 
 class SimulatedAnnealing(ParentAlgorithm):
-    def __init__(self, data, initial_temp=1000, cooling_rate=0.01, min_temp=1e-3):
-        super().__init__(data)
-        self.input = data
+    def __init__(self, input, initial_temp=1000, cooling_rate=0.01, min_temp=1e-3):
+        super().__init__(input)
+        self.input = input
         self.initial_temp = initial_temp
         self.cooling_rate = cooling_rate
         self.min_temp = min_temp
@@ -425,6 +426,8 @@ class SimulatedAnnealing(ParentAlgorithm):
         current_state = self.current_state
         current_score = self.best_score
         T = self.initial_temp
+
+        self.visualize_state("SA_Awal_")
         
         if verbose:
             print(f"Initial score: {current_score:.4f}")
@@ -454,12 +457,15 @@ class SimulatedAnnealing(ParentAlgorithm):
 
         if verbose:
             print(f"\nFinal best score: {self.best_score:.4f}")
+        
+        self.visualize_state("SA_Akhir_", state=self.best_state)
+        # self.fungsi_objektif(state=self.best_state, verbose=True)
 
         return self.best_state, self.best_score
 
 
 class GeneticAlgorithm(ParentAlgorithm):
-    def __init__(self, input, population_size=4):
+    def __init__(self, input, population_size=100):
         super().__init__(input)
         self.population_size = population_size
         self.input = input
@@ -480,69 +486,78 @@ class GeneticAlgorithm(ParentAlgorithm):
             population.append(new_state)
 
         self.population = sorted(population, key=lambda ind: self.fitness(ind), reverse=True)
-    
+
     def crossover(self, parent1, parent2):
         import copy
         import random
-
-        child1: list[Kelas] = copy.deepcopy(parent1)
-        child2: list[Kelas] = copy.deepcopy(parent2)
-
-        crossover_point = random.randint(1, len(parent1) - 1)
-        for i in range(crossover_point, len(parent1)):
-            child1[i].jadwal, child2[i].jadwal = child2[i].jadwal, child1[i].jadwal
-            child1[i].ruangan, child2[i].ruangan = child2[i].ruangan, child1[i].ruangan
+        
+        child1 = copy.deepcopy(parent1)
+        child2 = copy.deepcopy(parent2)
+        
+        num_crossover_points = random.randint(2, 4)
+        crossover_points = sorted(random.sample(range(1, len(parent1)), num_crossover_points))
+        
+        swap = False
+        prev_point = 0
+        
+        for point in crossover_points + [len(parent1)]:
+            if swap:
+                for i in range(prev_point, point):
+                    child1[i].jadwal = copy.deepcopy(parent2[i].jadwal)
+                    child1[i].ruangan = copy.deepcopy(parent2[i].ruangan)
+                    child2[i].jadwal = copy.deepcopy(parent1[i].jadwal)
+                    child2[i].ruangan = copy.deepcopy(parent1[i].ruangan)
+            swap = not swap
+            prev_point = point
         
         return child1, child2
-
-    def mutate(self, individual):
+    
+        
+    def mutate(self, individual, mutation_rate=0.3):
         import random
-        hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
-        jam_mulai_range = list(range(7, 16)) # jam 7 - 18
-
-        random_index = random.randint(0, len(individual)-1)
-
-        for h in hari:
-            for j in jam_mulai_range:
-                for r in self.ruangan:
+        import copy
+        
+        for i in range(len(individual)):
+            if random.random() < mutation_rate:
+                max_attempts = 50
+                for _ in range(max_attempts):
+                    h = random.choice(self.hari)
+                    j = random.choice(self.range_waktu)
+                    r = random.choice(self.ruangan)
+                    
                     jadwal_baru = {
                         "jadwal_mulai": [h, j],
-                        "jadwal_selesai": [h, j + individual[random_index].mata_kuliah['sks']]
+                        "jadwal_selesai": [h, j + individual[i].mata_kuliah['sks']]
                     }
+                    
+                    old_jadwal = copy.deepcopy(individual[i].jadwal)
+                    old_ruangan = copy.deepcopy(individual[i].ruangan)
+                    
+                    individual[i].jadwal = jadwal_baru
+                    individual[i].ruangan = r
+                    
+                    if not self.cek_konflik_jadwal(individual[i], jadwal_baru):
+                        break
+                    else:
+                        individual[i].jadwal = old_jadwal
+                        individual[i].ruangan = old_ruangan
 
-                    if r['kode'] != individual[random_index].ruangan['kode']:
-                        individual[random_index].ruangan = r
-
-                    if not self.cek_konflik_jadwal(individual[random_index], jadwal_baru):
-                        self.pindah_jadwal(individual[random_index], jadwal_baru)
-                        return
-        
-
-    def select_parents(self):
+    def select_parents(self, tournament_size=5):
         """
-        Seleksi parent dengan metode roulette wheel selection
+        Tournament selection
         """
         import random
+        
         parents = []
         for _ in range(self.population_size // 2):
-            fitnesses = [self.fitness(ind) for ind in self.population]
-            total_fitness = sum(fitnesses)
-            probabilities = [f / total_fitness for f in fitnesses]
-            roulette_wheel = [round(sum(probabilities[:i+1]), 3) for i in range(len(probabilities))]
+            # Select parent 1
+            tournament1 = random.sample(self.population, tournament_size)
+            parent1 = max(tournament1, key=lambda ind: self.fitness(ind))
             
-            random_value1 = round(random.uniform(0, 1), 3)
-            random_value2 = round(random.uniform(0, 1), 3)
-
-            parent1 = None
-            parent2 = None
-
-            for i, value in enumerate(roulette_wheel):
-                if random_value1 <= value and parent1 is None:
-                    parent1 = self.population[i]
-                if random_value2 <= value and parent2 is None:
-                    parent2 = self.population[i]
-                if parent1 is not None and parent2 is not None:
-                    break
+            # Select parent 2
+            tournament2 = random.sample(self.population, tournament_size)
+            parent2 = max(tournament2, key=lambda ind: self.fitness(ind))
+            
             parents.append((parent1, parent2))
         
         return parents
@@ -569,11 +584,8 @@ class GeneticAlgorithm(ParentAlgorithm):
         self.visualize_state("GA_Awal_")
 
         bin_individiu = []
-        # Inisialisasi semua parent
         for generasi in range(n_generasi):
-            # Seleksi parent
             parents = self.select_parents()
-            # Crossover dan Mutasi untuk menghasilkan anak
             next_generation = []
             print(len(parents))
             for parent1, parent2 in parents:
@@ -584,7 +596,6 @@ class GeneticAlgorithm(ParentAlgorithm):
 
             fitnesses = [self.fitness(ind) for ind in self.population]
 
-            # Deteksi stagnasi: cek apakah fitness dominan (60% sama)
             from collections import Counter
             counter = Counter(fitnesses)
             most_common_count = counter.most_common(1)[0][1]
@@ -596,13 +607,13 @@ class GeneticAlgorithm(ParentAlgorithm):
                 self.population = self.population + next_generation
             
                 sorted_pop = sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)
-                top_10 = sorted_pop[:15]
-                random_30 = random.sample(bin_individiu, min(25, len(bin_individiu)))
+                top_10 = sorted_pop[:10]
+                random_30 = random.sample(bin_individiu, min(10, len(bin_individiu)))
                 self.population = top_10 + random_30
             else:
                 self.population += next_generation
-                bin_individiu += sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)[40:]
-                self.population = sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)[:40]
+                bin_individiu += sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)[20:]
+                self.population = sorted(self.population, key=lambda ind: self.fitness(ind), reverse=True)[:20]
 
             if verbose:
                 print(f"Generasi {generasi + 1}:")
@@ -610,4 +621,5 @@ class GeneticAlgorithm(ParentAlgorithm):
                 print([self.fitness(ind) for ind in self.population])
                 print(len(bin_individiu))
         
-        self.visualize_state("GA_Akhir_", state=self.population[0])
+        print(self.fungsi_objektif(self.population[0], verbose=True))
+        self.visualize_state("GA_Akhir_MutationLama", state=self.population[0])
