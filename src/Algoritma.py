@@ -400,8 +400,7 @@ class HC_SA(ParentAlgorithm):
 
     def run(self, verbose=False):
         start_time = time.time()
-        current_state = self.state
-        current_score = self.fungsi_objektif(current_state)
+        current_score = self.fungsi_objektif()
 
         self.visualize_state("HC_Awal_")
         if verbose:
@@ -423,18 +422,17 @@ class HC_SA(ParentAlgorithm):
             if verbose:
                 print(f"Skor saat ini : {current_score:.4f}, Skor neighbor terbaik: {best_neighbor_score:.4f}")
             if best_neighbor_score > current_score:
-                current_state = best_neighbor
+                self.state = best_neighbor
                 current_score = best_neighbor_score
                 history.append(current_score)
                 if verbose:
                     print(f"Ditemukan state yang lebih baik dengan skor baru: {current_score:.4f}")
             else:
                 if verbose:
-                    print("Tidak ada perbaikan, telah mencapai lokal optimum.")
+                    print("Tidak ada perbaikan, telah mencapai" + "global optimum" if self.fungsi_objektif() == 0 else "lokal optimum")
                 break
         end_time = time.time()
         duration = end_time - start_time
-        self.state = current_state
         self.visualize_state("HC_Akhir_")
         return self.state, current_score
 
