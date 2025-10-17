@@ -40,7 +40,7 @@ Clone Repository ini dengan menjalankan perintah berikut pada terminal Anda
 - Masuk ke direktori src
 - Jalankan:
 ```bash
-  python Main.py
+  python main.py
 ```
 
 ## Kontributor serta Pembagian Tugasnya
@@ -50,5 +50,6 @@ Clone Repository ini dengan menjalankan perintah berikut pada terminal Anda
 | 10122057 | Farrell Jabaar Altafataza | Hill Climbing, laporan |
 | 13122003 | Raudah Yahya Kuddah | Simulated Annealing, laporan |
 | 13522076 | Muhammad Syarafi Akmal  | Base code parent algoritma, Genetic Algorithm, Utilities |
+
 
 
