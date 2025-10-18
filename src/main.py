@@ -3,13 +3,15 @@ import sys, os
 import json, time
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         os.makedirs("output", exist_ok=True)
         print("Usage:")
+        print("Algorithm options: hc (Hill Climbing Steepest Ascent), sa (Simulated Annealing), ga (Genetic Algorithm)\n")
         print("1. python main.py <algorithm> <input.json> <population_size>* <generations num>*")
+        print("e.g: python main.py ga input/input_1.json 10 10  OR  python main.py hc input/input_1.json\n")
         print("2. python main.py experiment <input.json>")
-        print("Note: * indicates optional arguments for Genetic Algorithm only.")
-        print("Algorithm options: hc (Hill Climbing Steepest Ascent), sa (Simulated Annealing), ga (Genetic Algorithm)")
+        print("e.g: python main.py experiment input/input_1.json\n")
+        print("NOTE: * indicates optional arguments for Genetic Algorithm only.")
         sys.exit(1)
 
     algorithm = sys.argv[1]
