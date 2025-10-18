@@ -387,7 +387,7 @@ class ParentAlgorithm:
         pdf.build(elements)
 
 class HC_SA(ParentAlgorithm):
-    def __init__(self, input, seed):
+    def __init__(self, input, seed=None):
         super().__init__(input, seed)
 
 
@@ -449,7 +449,7 @@ class HC_SA(ParentAlgorithm):
         plt.close()
 
 class SimulatedAnnealing(ParentAlgorithm):
-    def __init__(self, input, seed, initial_temp=1000, cooling_rate=0.01, min_temp=1e-3):
+    def __init__(self, input, seed=None, initial_temp=1000, cooling_rate=0.01, min_temp=1e-3):
         super().__init__(input, seed)
         self.input = input
         self.initial_temp = initial_temp

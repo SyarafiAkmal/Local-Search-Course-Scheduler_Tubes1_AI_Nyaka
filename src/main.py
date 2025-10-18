@@ -1,9 +1,10 @@
 from Algoritma import HC_SA, SimulatedAnnealing, GeneticAlgorithm
-import sys
+import sys, os
 import json, time
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
+        os.makedirs("output", exist_ok=True)
         print("Usage:")
         print("1. python main.py <algorithm> <input.json> <population_size>* <generations num>*")
         print("2. python main.py experiment <input.json>")
@@ -20,10 +21,10 @@ if __name__ == "__main__":
     match algorithm:
         case "hc":
             hill_climbing = HC_SA(input=input_file)
-            hill_climbing.run(verbose=True)
+            hill_climbing.run(verbose=True, name="HC_main_")
         case "sa":
             simulated_annealing = SimulatedAnnealing(input=input_file)
-            simulated_annealing.run(verbose=True)
+            simulated_annealing.run(verbose=True, name="SA_main_")
         case "ga":
             if sys.argv[3] and sys.argv[4]:
                 population_size = int(sys.argv[3])
@@ -33,7 +34,7 @@ if __name__ == "__main__":
                 sys.exit(1)
         
             genetic_algorithm = GeneticAlgorithm(input=input_file, population_size=population_size, n_generasi=generasi)
-            genetic_algorithm.run(verbose=True, name="GA_test")
+            genetic_algorithm.run(verbose=True, name="GA_main")
 
         case "experiment":
             # HC_SA
