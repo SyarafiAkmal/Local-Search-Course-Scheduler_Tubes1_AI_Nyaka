@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 class ParentAlgorithm:
-    def __init__(self, input, seed=0):
+    def __init__(self, input, seed=None):
         """
         Inisialisasi kelas parent algoritma dengan state awal dan data mahasiswa dan juga inisialisasi state awal
 
@@ -27,11 +27,12 @@ class ParentAlgorithm:
         self.mahasiswa = input['mahasiswa']
         self.ruangan = input['ruangan']
 
-        random.seed(seed)
-        seed_start = random.randint(0, 100)
-        for mata_kuliah in input['kelas_mata_kuliah']:
-            mata_kuliah['random_seed'] = seed_start
-            seed_start += 1
+        if seed:
+            random.seed(seed)
+            seed_start = random.randint(0, 100)
+            for mata_kuliah in input['kelas_mata_kuliah']:
+                mata_kuliah['random_seed'] = seed_start
+                seed_start += 1
 
         # self.dosen = input['dosen'] buat bonus
         self.convert_input_ke_state(input)
@@ -77,21 +78,12 @@ class ParentAlgorithm:
                             self.pindah_jadwal(new_state[i], jadwal_baru)
                             neighbor_pindah.append(new_state)
 
-
-        # debug purposes
-        # self.show_state(neighbor_pindah[0])
-        # print(len(neighbor_tukar))
-        # print(len(neighbor_pindah))
-
         return neighbor_tukar + neighbor_pindah
-    
     
     def get_random_neighbor(self):
         """
         Fungsi untuk mendapatkan satu neighbor secara acak dari state saat ini: List[Kelas]
         """
-        import copy
-        import random
 
         neighbor_tukar = copy.deepcopy(self.state)
         neighbor_pindah = copy.deepcopy(self.state)
@@ -124,13 +116,11 @@ class ParentAlgorithm:
 
         return max([neighbor_pindah, neighbor_tukar], key=lambda s: self.fungsi_objektif(s))
 
-
-
     def tukar_jadwal(self, kelas1: Kelas, kelas2: Kelas):
         """
-        Fungsi untuk menukar jadwal dua kelas (menukar jadwal: dict -> {'jadwal_mulai': [hari, jam_mulai], 'jadwal_selesai': [hari, jam_mulai + sks]})
+        Fungsi untuk menukar jadwal dua kelas 
+        (menukar jadwal: dict -> {'jadwal_mulai': [hari, jam_mulai], 'jadwal_selesai': [hari, jam_mulai + sks]})
         """
-        import copy
 
         jadwal_kelas1 = copy.deepcopy(kelas1.jadwal)
         jadwal_kelas2 = copy.deepcopy(kelas2.jadwal)
@@ -147,7 +137,6 @@ class ParentAlgorithm:
             # debug purposes
             # print("Pindah Jadwal Kelas", kelas.mata_kuliah['kode'], "ke", jadwal_baru)
         
-
     def cek_konflik_jadwal(self, kelas: Kelas, jadwal_baru):
         """
         Fungsi untuk mengecek apakah jadwal baru konflik dengan jadwal kelas lain (jadwal tabrakan dan ruangan sama)
@@ -244,7 +233,6 @@ class ParentAlgorithm:
             print("Objektif Jadwal Mahasiswa:", obj_jadwal_mahasiswa)
 
         return obj_jadwal_mahasiswa + obj_kuota_kelas + obj_jadwal_kelas
-
 
     def get_kelas_by_kode(self, kode, state=None):
         if state is None:
@@ -670,7 +658,8 @@ class GeneticAlgorithm(ParentAlgorithm):
         Semakin besar nilai fitness, semakin baik individu tersebut
         """
         # print(len(self.input['kelas_mata_kuliah']) + len(self.input['ruangan']) + len(self.input['mahasiswa']))
-        return 100 * (len(self.input['kelas_mata_kuliah']) + len(self.input['ruangan']) + len(self.input['mahasiswa'])) + self.fungsi_objektif(individual)
+        return 100 * (len(self.input['kelas_mata_kuliah']) 
+        + len(self.input['ruangan']) + len(self.input['mahasiswa'])) + self.fungsi_objektif(individual)
     
     def show_population(self):
         for i, individual in enumerate(self.population):
